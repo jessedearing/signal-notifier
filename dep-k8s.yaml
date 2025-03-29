@@ -1,0 +1,143 @@
+# https://kubernetes.io/docs/concepts/workloads/controllers/deployment/
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: signal-notifier-poc
+  namespace: wff-signal-notifier
+  labels:
+    app: signal-notifier-poc
+spec:
+  selector:
+    matchLabels:
+      app: signal-notifier-poc
+  replicas: 1
+  template:
+    metadata:
+      annotations:
+        kubectl.kubernetes.io/default-container: app
+      labels:
+        app: signal-notifier-poc
+    spec:
+      # initContainers:
+      # Init containers are exactly like regular containers, except:
+      # - Init containers always run to completion.
+      # - Each init container must complete successfully before the next one starts.
+      containers:
+        - name: app
+          image: 627264458151.dkr.ecr.us-west-2.amazonaws.com/signal-notifier:v0.1.0
+          imagePullPolicy: IfNotPresent
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 5
+            timeoutSeconds: 5
+            successThreshold: 1
+            failureThreshold: 3
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 5
+            timeoutSeconds: 2
+            successThreshold: 1
+            failureThreshold: 3
+            periodSeconds: 10
+          envFrom:
+            - secretRef:
+                name: notifier-secrets
+          ports:
+            - containerPort: 3000
+              name: http
+        - name: signal-api
+          image: docker.io/bbernhard/signal-cli-rest-api:latest
+          imagePullPolicy: IfNotPresent
+          livenessProbe:
+            httpGet:
+              port: 8080
+              path: /v1/health
+            initialDelaySeconds: 5
+            timeoutSeconds: 5
+            successThreshold: 1
+            failureThreshold: 3
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /v1/health
+              port: 8080
+            initialDelaySeconds: 5
+            timeoutSeconds: 2
+            successThreshold: 1
+            failureThreshold: 3
+            periodSeconds: 10
+          env:
+            - name: MODE
+              value: native
+          volumeMounts:
+            - mountPath: /home/.local/share/signal-cli
+              name: local-share
+      volumes:
+        - name: local-share
+          persistentVolumeClaim:
+            claimName: signal-notifier-poc
+      restartPolicy: Always
+      imagePullSecrets:
+        - name: aws
+---
+# https://kubernetes.io/docs/concepts/storage/persistent-volumes/
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: signal-notifier-poc
+  namespace: wff-signal-notifier
+spec:
+  storageClassName: do-block-storage-retain
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 500Mi
+---
+# https://kubernetes.io/docs/concepts/services-networking/ingress/
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: signal-notifier-poc
+  namespace: wff-signal-notifier
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: development.jesse.dev
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: signal-notifier-poc
+                port:
+                  number: 80
+  tls:
+    - hosts:
+        - development.jesse.dev
+      secretName: development.jesse.dev-tls
+---
+# https://kubernetes.io/docs/concepts/services-networking/service/
+apiVersion: v1
+kind: Service
+metadata:
+  name: signal-notifier-poc
+  namespace: wff-signal-notifier
+spec:
+  selector:
+    app: signal-notifier-poc
+  type: ClusterIP
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: http
+---
