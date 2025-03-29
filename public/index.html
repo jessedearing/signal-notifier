@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title></title>
+    <link href="css/style.css" rel="stylesheet" />
+  </head>
+  <body>
+    <div class="pb-10">
+      <h1 class="text-3xl">Request a ride</h1>
+    </div>
+    <form action="/request" method="post">
+      <div class="p-3">
+        <label for="name">Name</label>
+        <input id="name" name="name" type="text" class="border w-lg" />
+      </div>
+      <div class="p-3">
+        <label for="phone">Phone</label>
+        <input id="phone" name="phone" type="phone" class="border w-xs" />
+      </div>
+      <div class="w-xl pt-3">
+        <button
+          type="submit"
+          class="bg-blue-500 text-white border p-3 rounded-lg float-right"
+        >
+          Request a ride contact
+        </button>
+      </div>
+    </form>
+  </body>
+</html>
