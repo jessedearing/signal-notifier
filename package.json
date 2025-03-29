@@ -9,7 +9,8 @@
   "scripts": {
     "dev": "tsx ./index.ts",
     "tsc": "tsc",
-    "css": "tailwindcss -i styles/style.css -o public/css/style.css"
+    "css": "tailwindcss -i styles/style.css -o public/css/style.css",
+    "build": "tsc --outDir dist --noEmit false"
   },
   "devDependencies": {
     "@tailwindcss/cli": "^4.0.17",

@@ -1,3 +1,5 @@
 .nodeenv/
 node_modules/
 public/css/
+dist/
+.env
