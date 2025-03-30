@@ -38,3 +38,7 @@ process.on("SIGINT", () => {
   console.log("SIGINT signal received: closing HTTP server");
   process.exit(0);
 });
+
+setInterval(async () => {
+  await fetch(`http://localhost:8080/v2/receive/${phoneNumber}`);
+}, 1000 * 120);
